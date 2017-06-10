@@ -1,0 +1,9 @@
+name: twitch
+version: 0.1.0
+
+authors:
+  - Zac Nowicki <zachnowicki@gmail.com>
+
+crystal: 0.21.1
+
+license: MIT

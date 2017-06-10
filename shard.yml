@@ -2,8 +2,15 @@ name: twitch
 version: 0.1.0
 
 authors:
+  - Daniel Worral <Daniel.Worrall@hotmail.co.uk>
+  - snapcase <snapcase@octalzeroes.com>
   - Zac Nowicki <zachnowicki@gmail.com>
 
 crystal: 0.21.1
 
 license: MIT
+
+dependencies:
+  fast-irc:
+    github: rx14/fast_irc.cr
+    version: 0.3.0

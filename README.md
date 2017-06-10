@@ -14,11 +14,33 @@ dependencies:
 
 ## Usage
 
+There are several main components to the library:
+
+- `Twitch::Kraken` - Client for interacting with Twitch's REST API
+
 ```crystal
-require "twitch"
+require "twitch/kraken"
+
+twitch = Twitch::Kraken.new(token: "cfabdegwdoklmawdzdo98xt2fo512y")
 ```
 
-TODO: Write usage instructions here
+Refer to the documentation for the kinds of requests you can make with this client.
+
+- `Twitch::IRC` - Client for building IRC applications
+
+```crystal
+require "twitch/irc"
+
+bot = Twitch::IRC.new(nick: "nekka", token: "cfabdegwdoklmawdzdo98xt2fo512y")
+
+# Create a handler to process incoming messages
+bot.on_message do |message|
+  # handle this message
+end
+
+# Connect to Twitch
+bot.run!
+```
 
 ## Contributors
 

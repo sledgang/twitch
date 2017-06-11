@@ -1,5 +1,6 @@
 require "./twitch/*"
 
 module Twitch
-  # TODO Put your code here
+  # URL to the Twitch API
+  API_URL = "https://api.twitch.tv"
 end

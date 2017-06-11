@@ -90,7 +90,7 @@ module Twitch
 
     # Returns the token, prefixed with OAuth2
     def to_s
-      "OAuth2 #{token}"
+      "OAuth #{token}"
     end
   end
 end

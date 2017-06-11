@@ -2,6 +2,8 @@
 
 A binding to the [Twitch API](https://dev.twitch.tv/docs) implemented in [Crystal](https://crystal-lang.org/).
 
+### WIP - Still under heavy design/development!
+
 ## Installation
 
 Add this to your application's `shard.yml`:

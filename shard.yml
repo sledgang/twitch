@@ -11,6 +11,6 @@ crystal: 0.21.1
 license: MIT
 
 dependencies:
-  fast-irc:
+  fast_irc:
     github: rx14/fast_irc.cr
     version: 0.3.0

@@ -44,6 +44,6 @@ bot.run!
 
 ## Contributors
 
-- [Daniel-Worral](https://github.com/Daniel-Worrall) - creator, maintainer, spec-man extraordinaire
+- [Daniel-Worrall](https://github.com/Daniel-Worrall) - creator, maintainer, spec-man extraordinaire
 - [snapcase](https://github.com/snapcase) - creator, maintainer, IRC expert
 - [z64](https://github.com/z64) - creator, maintainer, script kiddie

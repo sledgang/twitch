@@ -84,11 +84,8 @@ module Twitch
 
     # Initializer for easily constructing a Token from an OAuth2
     # flow response. `scopes` is expected to be an array of scope strings.
-    def initialize(@token, @type = "Bearer", scopes = [] of Array(String))
+    def initialize(@token, scopes = ["none"], @type = "Bearer")
       @scope = scopes.map { |string| Scope.parse(string) }.reduce { |memo, e| memo | e }
-    end
-
-    def initialize(@token, @type = "Bearer", @scope = Scope::None)
     end
 
     # Returns the token, prefixed with OAuth2

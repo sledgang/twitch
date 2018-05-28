@@ -91,25 +91,25 @@ module Twitch::REST
   end
 
   # Returns the current authorized `User`
-  def current_user
+  def get_current_user
     response = request(Request.get_users(nil, nil))
     parse_single(User, from: response.body)
   end
 
   # Returns a single `User` by ID
-  def user(id : Int32)
+  def get_user(id : Int32)
     response = request(Request.get_users(id, nil))
     parse_single(User, from: response.body)
   end
 
   # Returns a single `User` by login name
-  def user(login : String)
+  def get_user(login : String)
     response = request(Request.get_users(nil, login))
     parse_single(User, from: response.body)
   end
 
   # Returns multiple users in bulk by ID or login name
-  def users(ids : Array(Int32)? = nil, logins : Array(String)? = nil)
+  def get_users(ids : Array(Int32)? = nil, logins : Array(String)? = nil)
     raise ArgumentError.new("Must supply one of `ids` or `logins`") unless (ids || logins)
     id_count = ids.try(&.size) || 0
     login_count = logins.try(&.size) || 0

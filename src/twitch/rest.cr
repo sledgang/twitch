@@ -45,6 +45,38 @@ module Twitch::REST
     @scope.includes?(scope) || raise ScopeError.new("OAuth2 token missing scope: #{scope}")
   end
 
+  # Gets a single game by ID.
+  def get_game(id : Int32)
+    response = request(Request.get_games(id, nil))
+    parse_single(Game, from: response.body)
+  end
+
+  # Gets a single game by name.
+  def get_game(name : String)
+    response = request(Request.get_games(nil, name))
+    parse_single(Game, from: response.body)
+  end
+
+  # Gets multiple game information by name or ID.
+  def get_games(ids : Array(Int32)? = nil, names : Array(String)? = nil)
+    raise ArgumentError.new("Must provide one of id or name") unless ids || names
+    id_count = ids.try(&.size) || 0
+    name_count = names.try(&.size) || 0
+    raise ArgumentError.new("Can only request 100 games at a time (ids: #{id_count} / 100, logins: #{name_count} / 100)") if (id_count > 100) || (name_count > 100)
+
+    response = request(Request.get_games(ids, names))
+    Array(Game).from_json(response.body)
+  end
+
+  # Returns a `Paginator(Game)` that can be used to query top games matching
+  # the given arguments.
+  def get_top_games(first : Int32? = 20)
+    Paginator(Game).new(first) do |next_cursor|
+      response = request(Request.get_top_games(next_cursor, nil, first))
+      Page(Game).from_json(response.body)
+    end
+  end
+
   # Returns a `Paginator(Stream)` that can be used to query streams matching
   # the given arguments.
   def get_streams(user_id : Int32 | Array(Int32)? = nil, user_login : String | Array(String)? = nil,

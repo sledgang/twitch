@@ -39,6 +39,11 @@ module Twitch::REST
     object.not_nil!
   end
 
+  private def assert_scope(scope)
+    # TODO: This won't always be an OAuth2 token.
+    @scope.includes?(scope) || raise ScopeError.new("OAuth2 token missing scope: #{scope}")
+  end
+
   # Returns the current authorized `User`
   def current_user
     response = request(Request.get_users(nil, nil))

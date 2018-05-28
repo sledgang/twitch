@@ -44,6 +44,19 @@ module Twitch::REST
     @scope.includes?(scope) || raise ScopeError.new("OAuth2 token missing scope: #{scope}")
   end
 
+  # Returns a `Paginator(Stream)` that can be used to query streams matching
+  # the given arguments.
+  def get_streams(user_id : Int32 | Array(Int32)? = nil, user_login : String | Array(String)? = nil,
+                  community_id : String | Array(String)? = nil, game_id : Int32 | Array(Int32)? = nil,
+                  language : String? = nil, first : Int32? = 20)
+    Paginator(Stream).new(first) do |next_cursor|
+      prepared_request = Request.get_streams(next_cursor, nil, community_id,
+        first, game_id, language, user_id, user_login)
+      response = request(prepared_request)
+      Page(Stream).from_json(response.body)
+    end
+  end
+
   # Returns the current authorized `User`
   def current_user
     response = request(Request.get_users(nil, nil))

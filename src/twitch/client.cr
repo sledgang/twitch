@@ -6,6 +6,6 @@ class Twitch::Client
   include REST
 
   def initialize(@token : OAuth2::AccessToken, @logger = Logger.new(STDOUT))
-    @token.authenticate(@client)
+    @token.authenticate(@http_client)
   end
 end

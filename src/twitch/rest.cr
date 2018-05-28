@@ -10,7 +10,7 @@ module Twitch::REST
   # TODO: OAuth2 facilities
   OAUTH2_API_HOST = "id.twitch.tv"
 
-  @client = HTTP::Client.new(API_HOST, tls: true)
+  @http_client = HTTP::Client.new(API_HOST, tls: true)
 
   # Issue a request to the Twitch API
   def request(request : HTTP::Request)
@@ -19,7 +19,7 @@ module Twitch::REST
 
     # TODO: Response handling (errors, rate limiting)
     request.headers["Host"] = API_HOST
-    response = @client.exec(request)
+    response = @http_client.exec(request)
 
     @logger.info("[HTTP IN] #{response.status_code} #{response.status_message} (#{response.body.try(&.size) || 0} bytes)")
     @logger.debug("[HTTP BODY] #{response.body}") if @logger.debug?

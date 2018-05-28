@@ -224,8 +224,8 @@ module Twitch::Request
     HTTP::Request.new("GET", "/helix/users?#{params}")
   end
 
-  def get_user_follows(after : String?, first : Int32?, from_id : Int32?,
-                       to_id : Int32?)
+  def get_users_follows(after : String?, first : Int32?, from_id : Int32?,
+                        to_id : Int32?)
     params = HTTP::Params.build do |form|
       form.add("after", after) if after
       form.add("first", first.to_s) if first

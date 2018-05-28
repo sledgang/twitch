@@ -118,4 +118,15 @@ module Twitch::REST
     response = request(Request.get_users(ids, logins))
     Array(User).from_json(response.body, "data")
   end
+
+  # Returns a `Paginator(Follow)` that can be used to query follower
+  # relationship between users.
+  def get_users_follows(from_user_id : Int32? = nil, to_user_id : Int32? = nil,
+                        first : Int32? = 20)
+    raise ArgumentError.new("Must supply one of `from_user_id` or `to_user_id`") unless (from_user_id || to_user_id)
+    Paginator(Follow).new(first) do |next_cursor|
+      response = request(Request.get_users_follows(next_cursor, first, from_user_id, to_user_id))
+      Page(Follow).from_json(response.body)
+    end
+  end
 end

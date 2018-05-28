@@ -118,7 +118,7 @@ describe Twitch::Request do
   end
 
   it ".get_user_follows" do
-    request = Twitch::Request.get_user_follows(
+    request = Twitch::Request.get_users_follows(
       after: "foo",
       first: 1,
       from_id: 2,

@@ -36,7 +36,8 @@ module Twitch::REST
         object = type.new(parser)
       end
     end
-    object.not_nil!
+    # TODO: Custom exception
+    object || raise "Requested #{type} not found"
   end
 
   private def assert_scope(scope)

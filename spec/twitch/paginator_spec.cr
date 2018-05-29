@@ -17,7 +17,6 @@ describe Twitch::Paginator do
       paginator.next.should eq [1, 2]
       paginator.next.should eq [3, 4]
       paginator.next.should eq nil
-      paginator.items.should eq [1, 2, 3, 4]
     end
   end
 

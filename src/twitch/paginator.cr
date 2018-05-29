@@ -6,9 +6,6 @@
 class Twitch::Paginator(T)
   include Enumerable(T)
 
-  # The items that have been collected so far
-  getter items : Array(T)
-
   @next_cursor : String? = nil
 
   # :nodoc:
@@ -22,9 +19,6 @@ class Twitch::Paginator(T)
     page = @block.call(@next_cursor)
     return if page.data.empty?
     @next_cursor = page.cursor
-    page.data.each do |item|
-      @items << item
-    end
     page.data
   end
 

@@ -4,7 +4,7 @@ struct Twitch::User
     description: String,
     display_name: String,
     email: String?,
-    id: String, # TODO: Int32 converter
+    id: {type: Int32, converter: IDConverter},
     login: String,
     offline_image_url: String,
     profile_image_url: String,

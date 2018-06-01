@@ -45,6 +45,24 @@ module Twitch::REST
     @scope.includes?(scope) || raise ScopeError.new("OAuth2 token missing scope: #{scope}")
   end
 
+  # Retrieves a download URL for analytics reports (CSV files).
+  #
+  # NOTE: The URL is valid for 1 minute.
+  def get_game_analytics(game_id : Int32)
+    resposne = request(Request.get_game_analytics(nil, nil, game_id))
+    parse_single(GameAnalytics, from: response.body)
+  end
+
+  # Retrieves a download URL for analytics reports (CSV files).
+  #
+  # NOTE: The URL is valid for 1 minute.
+  def get_game_analytics(first : Int32 = 20)
+    Paginator(GameAnalytics).new(first) do |next_cursor|
+      response = request(Request.get_game_analytics(next_cursor, first, nil))
+      Page(GameAnalytics).from_json(response.body)
+    end
+  end
+
   # Gets a single game by ID.
   def get_game(id : Int32)
     response = request(Request.get_games(id, nil))

@@ -78,8 +78,11 @@ module Twitch::Request
     HTTP::Request.new("GET", "/helix/games?#{params}")
   end
 
-  def get_game_analytics(game_id : Int32?)
+  def get_game_analytics(after : String?, first : Int32? = nil,
+                         game_id : Int32? = nil)
     params = HTTP::Params.build do |form|
+      form.add("after", after) if after
+      form.add("first", first.to_s) if first
       form.add("game_id", game_id.to_s) if game_id
     end
 

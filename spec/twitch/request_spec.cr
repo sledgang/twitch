@@ -57,11 +57,14 @@ describe Twitch::Request do
   end
 
   it ".get_game_analytics" do
-    request = Twitch::Request.get_game_analytics(game_id: 123)
+    request = Twitch::Request.get_game_analytics(
+      after: "after",
+      first: 0,
+      game_id: 123)
 
     request.method.should eq "GET"
     request.path.should eq "/helix/analytics/games"
-    request.query.should eq "game_id=123"
+    request.query.should eq "after=after&first=0&game_id=123"
   end
 
   it ".get_top_games" do

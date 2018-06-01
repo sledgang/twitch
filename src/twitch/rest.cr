@@ -149,4 +149,11 @@ module Twitch::REST
       Page(Follow).from_json(response.body)
     end
   end
+
+  # Updates the description of the current user
+  def update_user(description : String)
+    assert_scope(Scope::UserEdit)
+    response = request(Request.update_user(description))
+    parse_single(User, from: response.body)
+  end
 end

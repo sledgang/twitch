@@ -14,3 +14,5 @@ dependencies:
   fast_irc:
     github: rx14/fast_irc.cr
     version: 0.3.0
+  rate_limiter:
+    github: z64/rate_limiter

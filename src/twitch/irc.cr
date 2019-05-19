@@ -15,6 +15,7 @@ class Twitch::IRC
     @limiter = RateLimiter(String).new
     @tags = [] of String
     limiter.bucket(:join, 50_u32, 15.seconds)
+    limiter.bucket(:message, 20_u32, 30.seconds)
   end
 
   def run(channels : Array(String))
@@ -27,6 +28,9 @@ class Twitch::IRC
   end
 
   def message(channel : String, message : String)
+    return unless @connected
+    wait = limiter.rate_limited?(:message, channel)
+    sleep(wait) if wait.is_a?(Time::Span)
     raw_write("PRIVMSG", [channel, message])
   end
 
@@ -38,6 +42,11 @@ class Twitch::IRC
     wait = limiter.rate_limited?(:join, "")
     sleep(wait) if wait.is_a?(Time::Span)
     raw_write("JOIN", ["##{channel}"])
+  end
+
+  def leave_channel(channel : String)
+    return unless @connected
+    raw_write("PART", ["##{channel}"])
   end
 
   def dispatch(message : FastIRC::Message)

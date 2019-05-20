@@ -6,12 +6,13 @@ class Twitch::IRC
   private getter socket : IO
   private getter limiter : RateLimiter(String)
   private getter tags : Array(String)
+  private getter log_mode : Bool
 
-  def self.new(nick : String, token : String)
-    new(TCPSocket.new("irc.chat.twitch.tv", 6667), nick, token)
+  def self.new(nick : String, token : String, log_mode = false)
+    new(TCPSocket.new("irc.chat.twitch.tv", 6667), nick, token, log_mode: log_mode)
   end
 
-  def initialize(@socket : IO, @nick : String, @token : String)
+  def initialize(@socket : IO, @nick : String, @token : String, @log_mode : Bool)
     @limiter = RateLimiter(String).new
     @tags = [] of String
     limiter.bucket(:join, 50_u32, 15.seconds)
@@ -50,6 +51,7 @@ class Twitch::IRC
   end
 
   def dispatch(message : FastIRC::Message)
+    puts "> " + message.to_s if log_mode
     case message.command
     when "PING"
       pong
@@ -70,7 +72,7 @@ class Twitch::IRC
 
   private def request_tags
     @tags.each do |tag|
-      raw_write("CAP REQ", [":twitch.tv/#{tag}"])
+      raw_write("CAP", ["REQ", "twitch.tv/#{tag}"])
     end
   end
 
@@ -85,6 +87,7 @@ class Twitch::IRC
   end
 
   private def raw_write(command, params, prefix = nil, tags = nil)
+    puts "< " + FastIRC::Message.new(command, params, prefix: prefix, tags: tags).to_s if log_mode
     FastIRC::Message.new(command, params, prefix: prefix, tags: tags).to_s(socket)
   end
 end

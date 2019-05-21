@@ -1,18 +1,16 @@
-require "socket"
 require "fast_irc"
 require "./rate_limiter"
+require "./irc/*"
 
-class Twitch::IRC
-  private getter socket : IO
-  private getter limiter : RateLimiter(String)
-  private getter tags : Array(String)
-  private getter log_mode : Bool
+class Twitch::IRC::Client
+  private getter connection, limiter, tags, log_mode
 
-  def self.new(nick : String, token : String, log_mode = false)
-    new(TCPSocket.new("irc.chat.twitch.tv", 6667), nick, token, log_mode: log_mode)
+  def self.new(nick : String, token : String, websocket = false, ssl = true, log_mode = false)
+    connection = Twitch::IRC::Connection.new(websocket, ssl)
+    new(connection, nick, token, log_mode: log_mode)
   end
 
-  def initialize(@socket : IO, @nick : String, @token : String, @log_mode : Bool)
+  def initialize(@connection : Twitch::IRC::Connection, @nick : String, @token : String, @log_mode = false)
     @limiter = RateLimiter(String).new
     @tags = [] of String
     limiter.bucket(:join, 50_u32, 15.seconds)
@@ -23,9 +21,10 @@ class Twitch::IRC
     authenticate
     spawn join_channels(channels)
     @connected = true
-    FastIRC.parse(socket) do |message|
+    connection.on_message do |message|
       spawn dispatch(message)
     end
+    connection.run
   end
 
   def message(channel : String, message : String)
@@ -50,6 +49,10 @@ class Twitch::IRC
     raw_write("PART", ["##{channel}"])
   end
 
+  def tags=(tags : Array(String))
+    @tags = tags
+  end
+
   def dispatch(message : FastIRC::Message)
     puts "> " + message.to_s if log_mode
     case message.command
@@ -58,10 +61,6 @@ class Twitch::IRC
     when "PRIVMSG"
       @on_message.try &.call(message)
     end
-  end
-
-  def tags=(tags : Array(String))
-    @tags = tags
   end
 
   private def authenticate
@@ -87,7 +86,8 @@ class Twitch::IRC
   end
 
   private def raw_write(command, params, prefix = nil, tags = nil)
-    puts "< " + FastIRC::Message.new(command, params, prefix: prefix, tags: tags).to_s if log_mode
-    FastIRC::Message.new(command, params, prefix: prefix, tags: tags).to_s(socket)
+    message = FastIRC::Message.new(command, params, prefix: prefix, tags: tags)
+    puts "< " + message.to_s if log_mode
+    connection.send(message)
   end
 end

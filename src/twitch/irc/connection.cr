@@ -38,8 +38,8 @@ class Twitch::IRC::Connection
     else
       socket.on_message do |message|
         reader = FastIRC::Reader.new(IO::Memory.new(message))
-        while m = reader.next
-          @on_message.try &.call(m)
+        while msg = reader.next
+          @on_message.try &.call(msg)
         end
       end
       socket.run

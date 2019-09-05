@@ -1,8 +1,38 @@
 require "kemal"
 require "openssl/hmac"
+require "logger"
 
 class Twitch::Kemal
-  def initialize(@secret : String = "")
+  CALLBACKS = ["users/follows", "streams", "users", "extensions/transactions",
+               "moderation/moderators/events", "moderation/banned/events", "subscriptions/events"]
+
+  macro call_event(name, payload)
+    @on_{{name.id}}_handlers.try &.each do |handler|
+      begin
+        handler.call({{payload}})
+      rescue ex
+        @logger.error <<-LOG
+          An exception occurred in a user-defined event handler!
+          #{ex.inspect_with_backtrace}
+          LOG
+      end
+    end
+  end
+
+  macro event(name)
+    @on_{{name.id}}_handlers = [] of String ->
+
+    def on_{{name.id}}(&handler : String ->)
+      @on_{{name.id}}_handlers << handler
+      handler
+    end
+  end
+
+  {% for path in CALLBACKS %}
+    event({{path.gsub(/\//, "_")}})
+  {% end %}
+
+  def initialize(@secret : String = "", @logger = Logger.new(STDOUT))
     get "/callback" do |env|
       halt(env) unless expecting_challenge(env)
       env.response.content_type = "text/plain"
@@ -37,23 +67,29 @@ class Twitch::Kemal
 
   def handle_callback(link, payload)
     uri = URI.parse(link)
+    {% begin %}
+      case uri.path
+        {% for path in CALLBACKS %}
+          when {{path}}
+            call_event({{path.gsub(/\//, "_")}}, payload)
+        {% end %}
+      else
+        @logger.info("Path:#{uri.path}, Link:#{link}, Payload:#{payload}")
+      end
+    {% end %}
+  end
 
-    case uri.path
-    # User Follows
-    when "/helix/users/follows"
-      # Stream Changed
-    when "/helix/streams"
-      # User Changed
-    when "/helix/users"
-      # Extension Transaction Created
-    when "/helix/extensions/transactions"
-      # Moderator Change Events
-    when "/helix/moderation/moderators/events"
-      # Channel Ban Change Events
-    when "/helix/moderation/banned/events"
-      # Subscription Events
-    when "/helix/subscriptions/events"
-    end
+  def delete_handler(handler : String ->, type : String)
+    {% begin %}
+      case type
+        {% for path in CALLBACKS %}
+          when {{path.gsub(/\//, "_")}}
+            @on_{{path.id.gsub(/\//, "_")}}_handlers.delete(handler)
+        {% end %}
+	    else
+    		@logger.warn("#{type} is not a valid handler type.")
+      end
+    {% end %}
   end
 
   def run
@@ -63,6 +99,6 @@ class Twitch::Kemal
   end
 
   def run
-    ::Kemal.run
+    run { }
   end
 end

@@ -56,13 +56,27 @@ class Twitch::Webhook
         # Halt unless the signature is valid
         halt(env) unless check_sha(payload, env.request.headers["x-hub-signature"], @secret) unless @secret == ""
 
-        matching = %r(<https://api.twitch.tv/helix/(\S+)\?(\S+)>; rel="self").match(env.request.headers["link"])
-        if matching
-          handle_callback($1, payload, HTTP::Params.parse($2).to_h)
+        links = parse_link_header(env.request.headers["link"])
+        if link = links["self"]
+          uri = URI.parse(link)
+          params = if query = uri.query
+                     HTTP::Params.parse(query).to_h
+                   else
+                     {} of String => String
+                   end
+          handle_callback(uri.path.lchop("/helix/"), payload, params)
+        else
+          halt(env)
         end
       else
         halt(env)
       end
+    end
+  end
+
+  private def parse_link_header(header)
+    header.scan(/<(?<url>\S+)>;\s+rel=\"(?<name>\S+)\"/).each_with_object({} of String => String) do |link, links|
+      links[link["name"]] = link["url"]
     end
   end
 

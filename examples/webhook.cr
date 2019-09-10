@@ -1,5 +1,5 @@
 require "twitch/client"
-require "twitch/kemal"
+require "twitch/webhook"
 
 # Topic to register follows from twitch user 1337
 topic = "https://api.twitch.tv/helix/users/follows?first=1&from_id=1337"
@@ -14,10 +14,10 @@ callback = "https://example.com/callback"
 client = Twitch::Client.new
 client.client_id = "TWITCH_CLIENT_ID"
 
-kemal = Twitch::Kemal.new
+webhook = Twitch::Webhook.new
 
 # Register a handler for when a user follows a channel
-kemal.on_users_follows do |payload, params|
+webhook.on_users_follows do |payload, params|
   pp payload
   pp params
 end
@@ -25,7 +25,7 @@ end
 # We use a Channel and spawn to ensure the server is up before we subscribe to the topic
 channel = Channel(Nil).new
 spawn do
-  kemal.run do
+  webhook.run do
     channel.send(nil)
   end
 end

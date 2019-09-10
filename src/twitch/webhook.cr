@@ -4,7 +4,7 @@ require "logger"
 require "json"
 require "./mappings/*"
 
-class Twitch::Kemal
+class Twitch::Webhook
   CALLBACKS = {
     "users/follows"                => Follow,
     "streams"                      => Stream,

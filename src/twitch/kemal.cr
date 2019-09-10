@@ -15,11 +15,11 @@ class Twitch::Kemal
     "subscriptions/events"         => Event(SubscriptionEvent),
   }
 
-  macro call_event(path, payload)
+  macro call_event(path, payload, params)
     event = WebhookEvent({{CALLBACKS[path]}}).from_json({{payload}})
     @on_{{path.id.gsub(/\//, "_")}}_handlers.try &.each do |handler|
       begin
-        handler.call(event)
+        handler.call(event, {{params}})
       rescue ex
         @logger.error <<-LOG
           An exception occurred in a user-defined event handler!
@@ -30,9 +30,9 @@ class Twitch::Kemal
   end
 
   macro event(name, payload)
-    @on_{{name.id}}_handlers = [] of WebhookEvent({{payload}}) ->
+    @on_{{name.id}}_handlers = [] of WebhookEvent({{payload}}), Hash(String, String) ->
 
-    def on_{{name.id}}(&handler : WebhookEvent({{payload}}) ->)
+    def on_{{name.id}}(&handler : WebhookEvent({{payload}}), Hash(String, String) ->)
       @on_{{name.id}}_handlers << handler
       handler
     end
@@ -58,7 +58,7 @@ class Twitch::Kemal
 
         matching = %r(<https://api.twitch.tv/helix/(\S+)\?(\S+)>; rel="self").match(env.request.headers["link"])
         if matching
-          handle_callback($1, payload)
+          handle_callback($1, payload, HTTP::Params.parse($2).to_h)
         end
       else
         halt(env)
@@ -75,19 +75,18 @@ class Twitch::Kemal
     "sha256=#{OpenSSL::HMAC.hexdigest(:sha256, secret, body)}" == signature
   end
 
-  def handle_callback(link, payload)
-    uri = URI.parse(link)
+  def handle_callback(link, payload, params)
     {% begin %}
-      case uri.path
+      case link
         {% for path in CALLBACKS %}
           when {{path}}
-            call_event({{path}}, payload)
+            call_event({{path}}, payload, params)
         {% end %}
       end
     {% end %}
   end
 
-  def delete_handler(handler : WebhookEvent ->, type : String)
+  def delete_handler(handler : WebhookEvent, Hash(String, String) ->, type : String)
     {% begin %}
       case type
         {% for path in CALLBACKS %}

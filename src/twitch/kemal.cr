@@ -1,15 +1,25 @@
 require "kemal"
 require "openssl/hmac"
 require "logger"
+require "json"
+require "./mappings/*"
 
 class Twitch::Kemal
-  CALLBACKS = ["users/follows", "streams", "users", "extensions/transactions",
-               "moderation/moderators/events", "moderation/banned/events", "subscriptions/events"]
+  CALLBACKS = {
+    "users/follows"                => Follow,
+    "streams"                      => Stream,
+    "users"                        => User,
+    "extensions/transactions"      => Transaction,
+    "moderation/moderators/events" => Event(ModeratorEvent),
+    "moderation/banned/events"     => Event(BanEvent),
+    "subscriptions/events"         => Event(SubscriptionEvent),
+  }
 
-  macro call_event(name, payload)
-    @on_{{name.id}}_handlers.try &.each do |handler|
+  macro call_event(path, payload)
+    event = WebhookEvent({{CALLBACKS[path]}}).from_json({{payload}})
+    @on_{{path.id.gsub(/\//, "_")}}_handlers.try &.each do |handler|
       begin
-        handler.call({{payload}})
+        handler.call(event)
       rescue ex
         @logger.error <<-LOG
           An exception occurred in a user-defined event handler!
@@ -19,17 +29,17 @@ class Twitch::Kemal
     end
   end
 
-  macro event(name)
-    @on_{{name.id}}_handlers = [] of String ->
+  macro event(name, payload)
+    @on_{{name.id}}_handlers = [] of WebhookEvent({{payload}}) ->
 
-    def on_{{name.id}}(&handler : String ->)
+    def on_{{name.id}}(&handler : WebhookEvent({{payload}}) ->)
       @on_{{name.id}}_handlers << handler
       handler
     end
   end
 
-  {% for path in CALLBACKS %}
-    event({{path.gsub(/\//, "_")}})
+  {% for path, klass in CALLBACKS %}
+    event({{path.gsub(/\//, "_")}}, {{klass}})
   {% end %}
 
   def initialize(@secret : String = "", @logger = Logger.new(STDOUT))
@@ -71,15 +81,13 @@ class Twitch::Kemal
       case uri.path
         {% for path in CALLBACKS %}
           when {{path}}
-            call_event({{path.gsub(/\//, "_")}}, payload)
+            call_event({{path}}, payload)
         {% end %}
-      else
-        @logger.info("Path:#{uri.path}, Link:#{link}, Payload:#{payload}")
       end
     {% end %}
   end
 
-  def delete_handler(handler : String ->, type : String)
+  def delete_handler(handler : WebhookEvent ->, type : String)
     {% begin %}
       case type
         {% for path in CALLBACKS %}

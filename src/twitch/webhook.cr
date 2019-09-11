@@ -3,6 +3,7 @@ require "openssl/hmac"
 require "logger"
 require "json"
 require "./mappings/*"
+require "onyx-eda/channel/memory"
 
 class Twitch::Webhook
   CALLBACKS = {
@@ -15,34 +16,13 @@ class Twitch::Webhook
     "subscriptions/events"         => Event(SubscriptionEvent),
   }
 
-  macro call_event(path, payload, params)
-    event = WebhookEvent({{CALLBACKS[path]}}).from_json({{payload}})
-    @on_{{path.id.gsub(/\//, "_")}}_handlers.try &.each do |handler|
-      begin
-        handler.call(event, {{params}})
-      rescue ex
-        @logger.error <<-LOG
-          An exception occurred in a user-defined event handler!
-          #{ex.inspect_with_backtrace}
-          LOG
-      end
-    end
-  end
-
-  macro event(name, payload)
-    @on_{{name.id}}_handlers = [] of WebhookEvent({{payload}}), Hash(String, String) ->
-
-    def on_{{name.id}}(&handler : WebhookEvent({{payload}}), Hash(String, String) ->)
-      @on_{{name.id}}_handlers << handler
-      handler
-    end
-  end
-
-  {% for path, klass in CALLBACKS %}
-    event({{path.gsub(/\//, "_")}}, {{klass}})
+  {% begin %}
+    alias All_Webhooks = {{CALLBACKS.values.map(&.id).join(" | ").id}}
   {% end %}
 
   def initialize(@secret : String = "", @logger = Logger.new(STDOUT))
+    @channel = Onyx::EDA::Channel::Memory.new
+
     get "/callback" do |env|
       halt(env) unless expecting_challenge(env)
       env.response.content_type = "text/plain"
@@ -92,23 +72,15 @@ class Twitch::Webhook
   def handle_callback(link, payload, params)
     {% begin %}
       case link
-        {% for path in CALLBACKS %}
+        {% for path, klass in CALLBACKS %}
           when {{path}}
-            call_event({{path}}, payload, params)
+            event = WebhookEvent({{klass}}).from_json(payload)
+            event.options = params
+            @channel.emit(event)
+            @channel.emit(WebhookEvent(All_Webhooks).new(event))
         {% end %}
-      end
-    {% end %}
-  end
-
-  def delete_handler(handler : WebhookEvent, Hash(String, String) ->, type : String)
-    {% begin %}
-      case type
-        {% for path in CALLBACKS %}
-          when {{path.gsub(/\//, "_")}}
-            @on_{{path.id.gsub(/\//, "_")}}_handlers.delete(handler)
-        {% end %}
-	    else
-    		@logger.warn("#{type} is not a valid handler type.")
+      else
+        @logger.warn("Received an unknown callback from #{link}")
       end
     {% end %}
   end
@@ -122,4 +94,19 @@ class Twitch::Webhook
   def run
     run { }
   end
+
+  macro on_event(event, klass)
+    def on_{{event}}(**filter, &block : {{klass}} -> _) : Onyx::EDA::Channel::Memory::Subscription({{klass}})
+      @channel.subscribe({{klass}}, **filter, &block)
+    end
+  end
+
+  {% for path, klass in CALLBACKS %}
+    on_event({{path.id.gsub(/\//, "_")}}, WebhookEvent({{klass}}))
+  {% end %}
+
+  on_event(all, WebhookEvent(All_Webhooks))
+
+  # TODO: SubscribeEvent
+  # TODO: UnsubscribeEvent
 end

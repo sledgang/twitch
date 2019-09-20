@@ -4,7 +4,7 @@ struct Twitch::Stream
     user_id: {type: Int32, converter: IDConverter},
     user_name: String,
     game_id: {type: Int32, converter: IDConverter},
-    tag_ids: Array(String),
+    tag_ids: Array(String)?,
     type: String, # TODO: Enum
     title: String,
     viewer_count: Int32,
